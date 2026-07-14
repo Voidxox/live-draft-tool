@@ -1,0 +1,273 @@
+/* ============================================================
+   直播选人台 · 设计系统 (深色 / 电竞直播主题)
+   - 对比度: 正文文本 >7:1, 次级 >4.5:1 (WCAG AA/AAA)
+   - 强调色: 电竞青 accent + 高亮金 gold (当前队长)
+   - 语义色: danger / success
+   ============================================================ */
+
+:root {
+  /* 背景层级 (由深到浅) */
+  --bg: #0d1117;
+  --surface-1: #161b22;
+  --surface-2: #1c232d;
+  --surface-3: #253040;
+
+  /* 描边 / 分隔 */
+  --border: #30363d;
+
+  /* 文本 (在 surface 上均满足对比要求) */
+  --text: #e6edf3;        /* 主文本, 对比 >12:1 */
+  --text-muted: #9aa7b5;  /* 次级文本, 对比 >4.5:1 */
+  --text-faint: #6b7684;  /* 弱化 (序号等非关键信息) */
+
+  /* 强调色: 电竞青 */
+  --accent: #2f81f7;
+  --accent-dark: #1f6fe5;
+  --accent-soft: rgba(47, 129, 247, 0.14);
+  --accent-ring: rgba(47, 129, 247, 0.4);
+
+  /* 高亮金: 当前轮到的队长 */
+  --gold: #f0b429;
+  --gold-soft: rgba(240, 180, 41, 0.12);
+  --gold-border: rgba(240, 180, 41, 0.5);
+  --gold-glow: rgba(240, 180, 41, 0.55);
+
+  /* 语义色 */
+  --danger: #f85149;
+  --danger-soft: rgba(248, 81, 73, 0.14);
+  --success: #3fb950;
+
+  /* ---- 字体 ---- */
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", "Microsoft YaHei",
+    "Noto Sans CJK SC", "PingFang SC", sans-serif;
+  --font-display: "Rajdhani", "Inter", system-ui, "Microsoft YaHei", sans-serif;
+
+  /* ---- 字号阶梯 (12/13/14/16/20/28/40) ---- */
+  --fs-xs: 12px;
+  --fs-sm: 13px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 28px;
+  --fs-2xl: 40px;
+
+  /* ---- 间距节奏 (4/8) ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* 半径 / 阴影 */
+  --radius: 14px;
+  --radius-sm: 8px;
+  --radius-lg: 18px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.02), 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+  --shadow-pop: 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+
+  /* ---- z-index 分层 ---- */
+  --z-sticky: 20;
+  --z-drag: 900;
+  --z-modal: 1000;
+  --z-toast: 1200;
+
+  color-scheme: dark;
+}
+
+/* ---- 队伍色板 (16 色, 支持多队伍不撞色) ---- */
+:root {
+  --team-1: #2f81f7;
+  --team-2: #f85149;
+  --team-3: #3fb950;
+  --team-4: #f0b429;
+  --team-5: #a371f7;
+  --team-6: #db61a2;
+  --team-7: #39c5cf;
+  --team-8: #ff7b72;
+  --team-9: #4ac776;
+  --team-10: #e3a008;
+  --team-11: #6e7bf2;
+  --team-12: #ec4899;
+  --team-13: #14b8a6;
+  --team-14: #f97316;
+  --team-15: #8b5cf6;
+  --team-16: #06b6d4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100dvh;
+}
+
+body {
+  color: var(--text);
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(47, 129, 247, 0.1), transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, rgba(240, 180, 41, 0.06), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#app {
+  min-height: 100dvh;
+}
+
+h1, h2, h3 {
+  line-height: 1.2;
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* 等宽数字: 计时器 / 比分 / 进度, 避免抖动 */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 隐藏原生数字输入的步进箭头 */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* ---------------- 公共卡片 ---------------- */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------------- 公共按钮 ---------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.16s ease-out,
+    border-color 0.16s ease-out,
+    transform 0.12s ease-out,
+    opacity 0.16s ease-out;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn.sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+.btn.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.btn.primary:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
+
+.btn.subtle {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+.btn.subtle:hover:not(:disabled) {
+  background: rgba(47, 129, 247, 0.22);
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+.btn.ghost:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ---------------- 自定义拖影 (append 到 body, 需全局样式) ---------------- */
+.pc-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.pc-drag-ghost .g-avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
