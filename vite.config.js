@@ -13,6 +13,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      // Steam 数据代理: /api/* 转发到同一个服务端的 HTTP 接口
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
     },
   },
 });

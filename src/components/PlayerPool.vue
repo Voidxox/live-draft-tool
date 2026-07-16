@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import PlayerCard from './PlayerCard.vue'
 import { dragState, setDropTarget, clearDropTarget, endDrag } from '../composables/useDragDrop.js'
+import { fetchSteamConfig } from '../store/steamClient.js'
 
 const props = defineProps({
   store: { type: Object, required: true },
@@ -9,6 +10,8 @@ const props = defineProps({
 
 const state = props.store.state
 const draftInProgress = computed(() => state.phase === 'drafting')
+// 只有 setup 阶段可勾选到场; 选人开始后花名册锁定
+const canEditPresence = computed(() => state.phase === 'setup')
 
 const quickName = ref('')
 const bulkOpen = ref(false)
@@ -81,7 +84,13 @@ function applyBulk() {
 }
 
 function openEdit(player) {
-  editing.value = { id: player.id, name: player.name, note: player.note || '' }
+  editing.value = {
+    id: player.id,
+    name: player.name,
+    note: player.note || '',
+    steamInput: player.steamInput || '',
+  }
+  steamMsg.value = ''
 }
 
 function saveEdit() {
@@ -90,6 +99,52 @@ function saveEdit() {
   if (!name) return
   props.store.updatePlayer(editing.value.id, { name, note: editing.value.note.trim() })
   editing.value = null
+}
+
+// ---- Steam 绑定 (在编辑弹窗内) ----
+const steamMsg = ref('')
+const steamConfig = ref(null) // { steam, faceit, opendota }
+
+onMounted(async () => {
+  steamConfig.value = await fetchSteamConfig()
+})
+
+// 绑定 / 拉取: 用弹窗里填的 steamInput 拉一次数据
+async function bindSteamInEdit() {
+  if (!editing.value) return
+  const input = (editing.value.steamInput || '').trim()
+  if (!input) {
+    steamMsg.value = '请先填写 Steam 链接 / ID'
+    return
+  }
+  steamMsg.value = '查询中…'
+  const r = await props.store.bindSteam(editing.value.id, input)
+  steamMsg.value = r.ok ? '已拉取 Steam 数据' : r.msg || '查询失败'
+}
+
+function unbindSteamInEdit() {
+  if (!editing.value) return
+  props.store.unbindSteam(editing.value.id)
+  editing.value.steamInput = ''
+  steamMsg.value = '已解绑'
+}
+
+// 当前编辑玩家是否正在查询
+const editingLoading = computed(
+  () => editing.value && props.store.isSteamLoading(editing.value.id),
+)
+
+// ---- 一键刷新全部已绑定选手 ----
+const boundCount = computed(() => state.pool.filter((p) => p.steamInput).length)
+const refreshingAll = ref(false)
+async function refreshAll() {
+  if (refreshingAll.value) return
+  refreshingAll.value = true
+  try {
+    await props.store.refreshAllSteam()
+  } finally {
+    refreshingAll.value = false
+  }
 }
 
 function confirmRemove(player) {
@@ -111,11 +166,33 @@ function confirmRemove(player) {
     <header class="card-head">
       <h2 id="pool-title">
         候选席
-        <span class="count tnum">{{ store.availablePlayers.value.length }}</span>
+        <span class="count tnum" :title="`到场 ${store.presentCount.value} / 共 ${state.pool.length}`">
+          {{ store.presentCount.value }} / {{ state.pool.length }}
+        </span>
       </h2>
-      <button type="button" class="btn ghost sm" @click="bulkOpen = !bulkOpen">
-        {{ bulkOpen ? '收起' : '批量添加' }}
-      </button>
+      <div class="head-actions">
+        <template v-if="canEditPresence && state.pool.length">
+          <button type="button" class="btn ghost sm" title="全部标记到场" @click="store.setAllPresence(true)">
+            全到场
+          </button>
+          <button type="button" class="btn ghost sm" title="全部标记未到" @click="store.setAllPresence(false)">
+            全未到
+          </button>
+        </template>
+        <button
+          v-if="boundCount"
+          type="button"
+          class="btn ghost sm"
+          :disabled="refreshingAll"
+          :title="`刷新全部 ${boundCount} 个已绑定选手的 Steam 数据`"
+          @click="refreshAll"
+        >
+          {{ refreshingAll ? '刷新中…' : `刷新 Steam (${boundCount})` }}
+        </button>
+        <button type="button" class="btn ghost sm" @click="bulkOpen = !bulkOpen">
+          {{ bulkOpen ? '收起' : '批量添加' }}
+        </button>
+      </div>
     </header>
 
     <form class="quick-add" @submit.prevent="addQuick">
@@ -144,14 +221,14 @@ function confirmRemove(player) {
     </div>
 
     <TransitionGroup
-      v-if="store.availablePlayers.value.length"
+      v-if="store.rosterPlayers.value.length"
       tag="div"
       name="pool"
       class="pool-grid"
       :style="{ '--cols': state.config.cardsPerRow }"
     >
       <div
-        v-for="(p, i) in store.availablePlayers.value"
+        v-for="(p, i) in store.rosterPlayers.value"
         :key="p.id"
         class="pool-item"
         :style="{ '--stagger': `${Math.min(i, 12) * 30}ms` }"
@@ -160,11 +237,15 @@ function confirmRemove(player) {
           :name="p.name"
           :note="p.note"
           :index="i"
-          :pickable="draftInProgress"
+          :pickable="draftInProgress && p.present !== false"
           :draggable="true"
           :player-id="p.id"
           :from-team-id="null"
+          :show-presence="canEditPresence"
+          :present="p.present !== false"
+          :steam="p.steam || null"
           @pick="store.pickPlayer(p.id)"
+          @toggle-presence="store.togglePresence(p.id)"
         />
         <div class="row-actions">
           <button
@@ -230,6 +311,47 @@ function confirmRemove(player) {
           <span class="field-label">备注（战力 / 位置等）</span>
           <input v-model="editing.note" class="text-input" type="text" maxlength="40" />
         </label>
+
+        <!-- Steam / V 社游戏数据绑定 -->
+        <div class="field steam-field">
+          <span class="field-label">
+            Steam 链接 / ID
+            <span v-if="steamConfig" class="steam-sources">
+              <span class="src on" title="OpenDota 免费, 始终可用">Dota2</span>
+              <span class="src" :class="{ on: steamConfig.faceit }" :title="steamConfig.faceit ? 'Faceit 已配置' : '未配置 FACEIT_API_KEY, CS2 数据不可用'">CS2</span>
+              <span class="src" :class="{ on: steamConfig.steam }" :title="steamConfig.steam ? 'Steam 已配置' : '未配置 STEAM_API_KEY, 头像/时长/vanity 解析不可用'">头像</span>
+            </span>
+          </span>
+          <div class="steam-input-row">
+            <input
+              v-model="editing.steamInput"
+              class="text-input"
+              type="text"
+              placeholder="粘贴 Steam 主页链接 / SteamID64 / 昵称"
+              @keydown.enter.prevent="bindSteamInEdit"
+            />
+            <button
+              type="button"
+              class="btn subtle sm"
+              :disabled="editingLoading || !editing.steamInput.trim()"
+              @click="bindSteamInEdit"
+            >
+              {{ editingLoading ? '查询中…' : '拉取' }}
+            </button>
+          </div>
+          <div class="steam-foot">
+            <span class="steam-msg" :class="{ err: steamMsg && !steamMsg.includes('已') && !steamMsg.includes('中') }">{{ steamMsg }}</span>
+            <button
+              v-if="editing.steamInput"
+              type="button"
+              class="link-btn"
+              @click="unbindSteamInEdit"
+            >
+              解绑
+            </button>
+          </div>
+        </div>
+
         <div class="modal-actions">
           <button type="button" class="btn ghost" @click="editing = null">取消</button>
           <button type="button" class="btn primary" :disabled="!editing.name.trim()" @click="saveEdit">
@@ -413,5 +535,63 @@ function confirmRemove(player) {
 
 @media (prefers-reduced-motion: reduce) {
   .modal-scrim, .modal { animation: none; }
+}
+
+/* ---- Steam 绑定字段 (编辑弹窗内) ---- */
+.steam-field {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.steam-sources {
+  display: inline-flex;
+  gap: 5px;
+  margin-left: 8px;
+}
+.steam-sources .src {
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 700;
+}
+.steam-sources .src.on {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+  background: color-mix(in srgb, var(--success) 12%, var(--surface-2));
+}
+.steam-input-row {
+  display: flex;
+  gap: 8px;
+}
+.steam-input-row .text-input {
+  flex: 1 1 auto;
+}
+.steam-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 18px;
+}
+.steam-msg {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.steam-msg.err {
+  color: var(--danger);
+}
+.link-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.link-btn:hover {
+  color: var(--danger);
 }
 </style>

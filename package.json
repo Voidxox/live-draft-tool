@@ -11,8 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "concurrently": "^10.0.3",
     "pinia": "^2.2.6",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "ws": "^8.21.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",

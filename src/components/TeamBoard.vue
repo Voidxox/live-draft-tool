@@ -145,6 +145,7 @@ function onMemberDragOver(e, i) {
           :draggable="true"
           :player-id="p.id"
           :from-team-id="team.id"
+          :steam="p.steam || null"
         />
         <div v-if="editable" class="member-move">
           <button

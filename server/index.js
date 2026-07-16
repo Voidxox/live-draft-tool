@@ -15,6 +15,7 @@
 
 import { WebSocketServer } from 'ws'
 import { createServer } from 'node:http'
+import { fetchPlayerData, steamConfigStatus } from './steam.js'
 
 const PORT = process.env.DRAFT_WS_PORT ? Number(process.env.DRAFT_WS_PORT) : 8787
 
@@ -54,13 +55,45 @@ function parseQuery(url) {
   return q
 }
 
-const httpServer = createServer((req, res) => {
+function sendJSON(res, status, obj) {
+  res.writeHead(status, {
+    'content-type': 'application/json',
+    // 允许前端(可能跨端口开发)直接调用
+    'access-control-allow-origin': '*',
+    'access-control-allow-headers': 'content-type',
+  })
+  res.end(JSON.stringify(obj))
+}
+
+const httpServer = createServer(async (req, res) => {
+  const url = req.url || ''
+
   // 健康检查
-  if (req.url === '/health' || req.url === '/ws/health') {
-    res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, rooms: rooms.size }))
-    return
+  if (url === '/health' || url === '/ws/health') {
+    return sendJSON(res, 200, { ok: true, rooms: rooms.size })
   }
+
+  // Steam 数据源配置状态: 前端据此提示哪些源未配置 key
+  if (url === '/api/steam/config') {
+    return sendJSON(res, 200, steamConfigStatus())
+  }
+
+  // Steam 数据查询: /api/steam/lookup?input=<链接|ID|昵称>
+  // key 只在服务端持有, 前端只发查询, 结果回给前端后挂到 player.steam。
+  if (url.startsWith('/api/steam/lookup')) {
+    const q = parseQuery(url)
+    const input = q.input || ''
+    if (!input.trim()) {
+      return sendJSON(res, 400, { error: '缺少 input 参数' })
+    }
+    try {
+      const data = await fetchPlayerData(input)
+      return sendJSON(res, 200, data)
+    } catch (e) {
+      return sendJSON(res, 502, { error: e.message || '查询失败' })
+    }
+  }
+
   res.writeHead(426, { 'content-type': 'text/plain' })
   res.end('Upgrade Required: this endpoint speaks WebSocket')
 })
