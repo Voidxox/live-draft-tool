@@ -81,19 +81,8 @@ const isDrafting = computed(() => state.phase === 'drafting')
 const isDone = computed(() => state.phase === 'done')
 const teamsEditable = computed(() => state.phase === 'setup')
 
-// 视图密度: auto 跟随队伍数, 或用户手动锁定 comfy/compact
-const viewMode = ref('auto') // auto | comfy | compact
-const viewModes = [
-  { value: 'auto', label: '自动', hint: '按队伍数自动切换密度' },
-  { value: 'comfy', label: '舒适', hint: '始终宽松显示' },
-  { value: 'compact', label: '紧凑', hint: '始终紧凑, 适合多队伍' },
-]
-// 队伍多时切紧凑显示; 手动模式优先
-const teamCompact = computed(() => {
-  if (viewMode.value === 'compact') return true
-  if (viewMode.value === 'comfy') return false
-  return state.teams.length >= 8
-})
+// 视图密度: 按队伍数自动切换 (8 队及以上转紧凑)
+const teamCompact = computed(() => state.teams.length >= 8)
 const teamMinWidth = computed(() => {
   const n = state.teams.length
   if (n >= 16) return '150px'
@@ -475,21 +464,6 @@ onBeforeUnmount(() => {
           <h2>战队面板 <span class="team-total tnum">{{ state.teams.length }}</span></h2>
           <div class="teams-head-right">
             <span class="hint">{{ dragHint }}</span>
-            <div class="view-toggle" role="radiogroup" aria-label="视图密度">
-              <button
-                v-for="m in viewModes"
-                :key="m.value"
-                type="button"
-                role="radio"
-                :aria-checked="viewMode === m.value"
-                class="view-seg"
-                :class="{ active: viewMode === m.value }"
-                :title="m.hint"
-                @click="viewMode = m.value"
-              >
-                {{ m.label }}
-              </button>
-            </div>
           </div>
         </div>
         <div class="teams-scroll">
@@ -515,9 +489,9 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .app-shell {
-  width: min(100%, 1240px);
+  width: min(100% - 40px, 1760px);
   margin: 0 auto;
-  padding: 20px 20px 72px;
+  padding: 20px 0 72px;
 }
 
 /* 顶栏 */
