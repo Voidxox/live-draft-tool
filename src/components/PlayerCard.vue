@@ -19,6 +19,9 @@ const props = defineProps({
   steam: { type: Object, default: null },
   // 正在拉取 Steam 数据: 卡片显示加载态 (转圈), 头像位占位
   loading: { type: Boolean, default: false },
+  // 卡牌展示模式: 候选席用纵向大卡牌 (头像居上/名字居中/段位横幅), 突出马匹主角感;
+  // 不传则为默认横向行模式 (队伍成员用, 窄列不撑爆)。
+  showcase: { type: Boolean, default: false },
 })
 defineEmits(['pick', 'edit', 'remove', 'toggle-presence'])
 
@@ -114,7 +117,7 @@ function onDragEnd() {
 <template>
   <div
     class="player-card"
-    :class="{ pickable, disabled, draggable, dragging, absent: showPresence && !present }"
+    :class="{ pickable, disabled, draggable, dragging, showcase, absent: showPresence && !present }"
     :role="pickable ? 'button' : undefined"
     :tabindex="pickable ? 0 : undefined"
     :aria-label="pickable ? `选择 ${name}` : name"
@@ -138,34 +141,45 @@ function onDragEnd() {
     >
       <svg v-if="present" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
     </button>
-    <span v-else-if="draggable" class="drag-handle" aria-hidden="true">
+    <span v-else-if="draggable && !showcase" class="drag-handle" aria-hidden="true">
       <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
         <circle cx="3" cy="3" r="1.4" /><circle cx="9" cy="3" r="1.4" />
         <circle cx="3" cy="8" r="1.4" /><circle cx="9" cy="8" r="1.4" />
         <circle cx="3" cy="13" r="1.4" /><circle cx="9" cy="13" r="1.4" />
       </svg>
     </span>
-    <span class="avatar" :class="{ 'has-img': steamAvatar }" aria-hidden="true">
-      <img v-if="steamAvatar" :src="steamAvatar" :alt="`${name} 头像`" loading="lazy" />
+    <span class="avatar" :class="{ 'has-img': showImg, loaded: imgLoaded }" aria-hidden="true">
+      <span v-if="loading" class="avatar-spin" aria-hidden="true"></span>
+      <img
+        v-else-if="showImg"
+        :src="steamAvatar"
+        :alt="`${name} 头像`"
+        loading="lazy"
+        @load="onImgLoad"
+        @error="onImgError"
+      />
       <template v-else>{{ name.slice(0, 1) }}</template>
     </span>
     <span class="body">
       <span class="name">{{ name }}</span>
       <span v-if="note" class="note">{{ note }}</span>
-      <span v-if="steamBadges.length" class="steam-badges">
+      <span v-if="primaryRank || steamBadges.length" class="steam-badges">
+        <span v-if="primaryRank" class="steam-badge rank" :class="`tone-${primaryRank.tone}`">
+          <span class="steam-badge-game">{{ primaryRank.game }}</span>
+          {{ primaryRank.label }}
+        </span>
         <span
           v-for="b in steamBadges"
           :key="b.key"
           class="steam-badge"
           :class="`tone-${b.tone}`"
         >
-          <span v-if="b.game" class="steam-badge-game">{{ b.game }}</span>
           {{ b.label }}
         </span>
       </span>
     </span>
     <span v-if="showPresence && !present" class="absent-tag" aria-hidden="true">未到</span>
-    <span v-else-if="pickable" class="pick-hint" aria-hidden="true">选入</span>
+    <span v-else-if="pickable && !showcase" class="pick-hint" aria-hidden="true">选入</span>
   </div>
 </template>
 
@@ -328,10 +342,6 @@ function onDragEnd() {
 @keyframes avatar-spin {
   to { transform: rotate(360deg); }
 }
-@media (prefers-reduced-motion: reduce) {
-  .avatar-spin { animation-duration: 1.4s; }
-  .avatar img { transition: none; }
-}
 
 .body {
   display: flex;
@@ -420,5 +430,129 @@ function onDragEnd() {
 }
 .steam-badge.tone-muted {
   color: var(--text-muted);
+}
+
+/* =========================================================
+   卡牌展示模式 (showcase): 候选席主角卡, 纵向布局
+   - 头像放大居上, 名字/段位居中
+   - 悬停抬升 + 边框点亮 + 高光扫过, 强化"可选/主角"感
+   - 保留原横向模式给队伍成员用, 互不影响
+   ========================================================= */
+.player-card.showcase {
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px 14px;
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 5%, var(--surface-2)), var(--surface-2));
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+/* 顶部一条细色带, 呼应卡牌质感 */
+.player-card.showcase::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--gold));
+  opacity: 0.5;
+  transition: opacity 0.16s ease-out;
+}
+/* 悬停高光扫过 (仅可选卡) */
+.player-card.showcase.pickable::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 22%, transparent),
+    transparent
+  );
+  transform: skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.player-card.showcase.pickable:hover::after {
+  animation: showcase-sheen 0.6s ease-out;
+}
+@keyframes showcase-sheen {
+  from { left: -60%; opacity: 0.9; }
+  to { left: 120%; opacity: 0; }
+}
+
+.player-card.showcase:hover,
+.player-card.showcase.pickable:hover,
+.player-card.showcase.pickable:focus-visible {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, var(--surface-2)), var(--surface-2));
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--accent);
+}
+.player-card.showcase:hover::before,
+.player-card.showcase.pickable:hover::before {
+  opacity: 1;
+}
+
+/* 卡牌大头像 */
+.player-card.showcase .avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  font-size: 30px;
+}
+/* 卡牌加载转圈放大 */
+.player-card.showcase .avatar-spin {
+  width: 28px;
+  height: 28px;
+}
+
+/* 卡牌正文居中 */
+.player-card.showcase .body {
+  align-items: center;
+  width: 100%;
+}
+.player-card.showcase .name {
+  font-size: 15px;
+  font-weight: 700;
+  max-width: 100%;
+}
+.player-card.showcase .note {
+  font-size: 12px;
+  max-width: 100%;
+}
+.player-card.showcase .steam-badges {
+  justify-content: center;
+  margin-top: 6px;
+}
+/* 卡牌里段位横幅化, 单独占一行更醒目 */
+.player-card.showcase .steam-badge.rank {
+  font-size: 12px;
+  padding: 3px 12px;
+}
+
+/* 到场开关移到卡牌右上角 */
+.player-card.showcase .presence-toggle {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+/* 未到场标签在卡牌里放到底部居中 */
+.player-card.showcase .absent-tag {
+  margin-top: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-spin { animation-duration: 1.4s; }
+  .avatar img { transition: none; }
+  .player-card.showcase.pickable:hover::after { animation: none; }
+  .player-card.showcase:hover { transform: none; }
 }
 </style>

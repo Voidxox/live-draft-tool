@@ -245,6 +245,7 @@ function confirmRemove(player) {
           :present="p.present !== false"
           :steam="p.steam || null"
           :loading="store.isSteamLoading(p.id)"
+          :showcase="true"
           @pick="store.pickPlayer(p.id)"
           @toggle-presence="store.togglePresence(p.id)"
         />
@@ -459,16 +460,18 @@ function confirmRemove(player) {
   opacity: 1;
 }
 .icon-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 1px solid var(--border);
-  background: var(--surface-1);
+  /* 卡牌上浮动: 用不透明底色确保图标清晰可辨 */
+  background: var(--surface-3);
   color: var(--text-muted);
   cursor: pointer;
   transition: all 0.16s ease-out;
+  box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
 }
 .icon-btn:hover {
   color: var(--text);
