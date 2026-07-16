@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { startDrag, endDrag } from '../composables/useDragDrop.js'
 
 const props = defineProps({
@@ -17,31 +17,50 @@ const props = defineProps({
   present: { type: Boolean, default: true },
   // Steam / V 社游戏数据 (来自 player.steam), 有则在卡片上展示头像与段位
   steam: { type: Object, default: null },
+  // 正在拉取 Steam 数据: 卡片显示加载态 (转圈), 头像位占位
+  loading: { type: Boolean, default: false },
 })
 defineEmits(['pick', 'edit', 'remove', 'toggle-presence'])
 
 // Steam 头像 (资料公开时才有), 无则回退到字母头像
 const steamAvatar = computed(() => props.steam?.profile?.avatar || '')
+// 头像外链加载失败 / 加载完成状态: 失败回退字母头像, 完成后淡入
+const imgFailed = ref(false)
+const imgLoaded = ref(false)
+function onImgError() { imgFailed.value = true }
+function onImgLoad() { imgLoaded.value = true }
+// 头像 URL 变化时重置加载状态 (刷新换头像的场景)
+watch(steamAvatar, () => { imgFailed.value = false; imgLoaded.value = false })
+// 实际用图: 有 URL 且未失败
+const showImg = computed(() => steamAvatar.value && !imgFailed.value)
 
-// 卡片上展示的紧凑数据标签: 优先段位, 其次核心水平指标。
-// 各源查不到时静默跳过, 不占位。
+// 段位主徽章: 竞技水平的核心信息, 单独抽出更突出显示 (Dota2 优先, 其次 CS2)。
+const primaryRank = computed(() => {
+  const s = props.steam
+  if (!s) return null
+  const d = s.dota2
+  if (d && d.rankName && d.rankName !== '未定级') {
+    return { game: 'DOTA2', label: d.rankName, tone: 'dota' }
+  }
+  const c = s.cs2
+  if (c && c.skillLevel != null) {
+    return { game: 'CS2', label: `Lv.${c.skillLevel}`, tone: 'cs' }
+  }
+  return null
+})
+
+// 次级数据标签: 胜率 / ELO 等辅助指标, 视觉上弱于主段位。
 const steamBadges = computed(() => {
   const s = props.steam
   if (!s) return []
   const out = []
   const d = s.dota2
-  if (d && d.rankName && d.rankName !== '未定级') {
-    out.push({ key: 'dota-rank', game: 'DOTA2', label: d.rankName, tone: 'dota' })
-  }
   if (d && d.winRate != null) {
-    out.push({ key: 'dota-wr', game: '', label: `胜率 ${d.winRate}%`, tone: 'muted' })
+    out.push({ key: 'dota-wr', label: `胜率 ${d.winRate}%`, tone: 'muted' })
   }
   const c = s.cs2
-  if (c && c.skillLevel != null) {
-    out.push({ key: 'cs-lvl', game: 'CS2', label: `Lv.${c.skillLevel}`, tone: 'cs' })
-  }
   if (c && c.elo != null) {
-    out.push({ key: 'cs-elo', game: '', label: `${c.elo} ELO`, tone: 'muted' })
+    out.push({ key: 'cs-elo', label: `${c.elo} ELO`, tone: 'muted' })
   }
   return out
 })
@@ -290,6 +309,28 @@ function onDragEnd() {
   height: 100%;
   object-fit: cover;
   display: block;
+  /* 外链头像加载完成后淡入, 避免闪现 */
+  opacity: 0;
+  transition: opacity 0.24s ease-out;
+}
+.avatar.loaded img {
+  opacity: 1;
+}
+/* 头像位加载态: 拉取 Steam 数据时的转圈 */
+.avatar-spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  animation: avatar-spin 0.7s linear infinite;
+}
+@keyframes avatar-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-spin { animation-duration: 1.4s; }
+  .avatar img { transition: none; }
 }
 
 .body {
@@ -360,6 +401,12 @@ function onDragEnd() {
   font-weight: 800;
   letter-spacing: 0.03em;
   opacity: 0.75;
+}
+/* 段位主徽章: 竞技水平核心, 视觉上强于次级指标 (更大字号/更实底色) */
+.steam-badge.rank {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 9px;
 }
 .steam-badge.tone-dota {
   border-color: color-mix(in srgb, #f0b429 45%, transparent);

@@ -244,6 +244,7 @@ function confirmRemove(player) {
           :show-presence="canEditPresence"
           :present="p.present !== false"
           :steam="p.steam || null"
+          :loading="store.isSteamLoading(p.id)"
           @pick="store.pickPlayer(p.id)"
           @toggle-presence="store.togglePresence(p.id)"
         />

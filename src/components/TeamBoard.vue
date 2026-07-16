@@ -14,6 +14,46 @@ const props = defineProps({
 })
 const emit = defineEmits(['update', 'remove-member', 'assign', 'move-member', 'unassign-member'])
 
+// ---- 队伍战力 (基于成员 Dota2 段位平均) ----
+// rankTier 两位数: 十位 = 段位(1-8), 个位 = 星级(0-5)。
+// 线性分值 = (段位-1)*5 + 星级, 便于求平均; 再映射回段位名展示。
+const DOTA_MEDALS = ['先锋', '卫士', '中军', '统帅', '传奇', '万古流芳', '超凡入圣', '冠绝一世']
+function tierToScore(rankTier) {
+  if (!rankTier) return null
+  const medal = Math.floor(rankTier / 10)
+  const stars = rankTier % 10
+  if (medal < 1) return null
+  return (medal - 1) * 5 + stars
+}
+function scoreToRankName(score) {
+  if (score == null) return '—'
+  const medal = Math.min(8, Math.floor(score / 5) + 1)
+  const stars = Math.round(score % 5)
+  const name = DOTA_MEDALS[medal - 1] || '—'
+  if (medal >= 8) return name // 冠绝一世无星级
+  return stars ? `${name} ${stars} 星` : name
+}
+
+// 本队战力: 有 Dota2 段位的成员的平均分。无任何数据 → null (显示 —)
+const teamPower = computed(() => {
+  const scores = props.members
+    .map((m) => tierToScore(m.steam?.dota2?.rankTier))
+    .filter((s) => s != null)
+  if (!scores.length) return null
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+  return {
+    score: avg,
+    rankName: scoreToRankName(avg),
+    covered: scores.length, // 有段位数据的人数
+    total: props.members.length,
+  }
+})
+// 战力条百分比: 满分 = 冠绝一世 (score 35 = (8-1)*5)
+const powerPct = computed(() => {
+  if (!teamPower.value) return 0
+  return Math.min(100, Math.round((teamPower.value.score / 35) * 100))
+})
+
 // 键盘可用的成员"移动"菜单 (拖拽的无障碍替代)
 const moveMenuFor = ref(null) // 当前打开菜单的 playerId
 function toggleMoveMenu(id) {
@@ -120,6 +160,18 @@ function onMemberDragOver(e, i) {
       <span class="team-count" aria-label="已选人数">{{ members.length }}</span>
       <span v-if="isActive" class="turn-badge">选人中</span>
     </header>
+
+    <!-- 队伍战力 (基于成员 Dota2 段位均值; 有数据才显示) -->
+    <div v-if="teamPower" class="team-power" :title="`${teamPower.covered}/${teamPower.total} 名成员有 Dota2 段位数据`">
+      <div class="power-top">
+        <span class="power-label">平均段位</span>
+        <span class="power-rank">{{ teamPower.rankName }}</span>
+        <span class="power-cover tnum">{{ teamPower.covered }}/{{ teamPower.total }}</span>
+      </div>
+      <div class="power-track" aria-hidden="true">
+        <div class="power-fill" :style="{ width: powerPct + '%' }"></div>
+      </div>
+    </div>
 
     <div v-if="members.length === 0" class="member-list empty">
       <div class="member-empty" :class="{ 'drop-hint': isDropTarget && canAcceptDrag }">
@@ -576,5 +628,66 @@ function onMemberDragOver(e, i) {
   height: 1px;
   margin: 4px 2px;
   background: var(--border);
+}
+
+/* ---- 队伍战力 (平均段位) ---- */
+.team-power {
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--team-color) 6%, transparent);
+}
+.power-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.power-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.power-rank {
+  flex: 1 1 auto;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.power-cover {
+  flex: 0 0 auto;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.power-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.power-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--team-color), var(--gold));
+  transition: width 0.3s ease-out;
+}
+
+/* 紧凑模式下战力条更薄 */
+.team-board.compact .team-power {
+  padding: 6px 10px 8px;
+}
+.team-board.compact .power-top {
+  margin-bottom: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .power-fill {
+    transition: none;
+  }
 }
 </style>
