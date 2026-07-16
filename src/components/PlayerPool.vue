@@ -319,7 +319,8 @@ function confirmRemove(player) {
             <span v-if="steamConfig" class="steam-sources">
               <span class="src on" title="OpenDota 免费, 始终可用">Dota2</span>
               <span class="src" :class="{ on: steamConfig.faceit }" :title="steamConfig.faceit ? 'Faceit 已配置' : '未配置 FACEIT_API_KEY, CS2 数据不可用'">CS2</span>
-              <span class="src" :class="{ on: steamConfig.steam }" :title="steamConfig.steam ? 'Steam 已配置' : '未配置 STEAM_API_KEY, 头像/时长/vanity 解析不可用'">头像</span>
+              <span class="src on" title="Steam Community 免 key, 头像/昵称/vanity 解析始终可用">头像</span>
+              <span class="src" :class="{ on: steamConfig.steam }" :title="steamConfig.steam ? 'Steam 已配置, 可拉游戏时长' : '未配置 STEAM_API_KEY, 无游戏时长'">时长</span>
             </span>
           </span>
           <div class="steam-input-row">

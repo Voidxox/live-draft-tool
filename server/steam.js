@@ -37,6 +37,58 @@ async function getJSON(url, { headers, timeout = 8000 } = {}) {
   }
 }
 
+// ---- 通用 fetch (带超时, 返回纯文本; 供 Community XML 用) ----
+async function getText(url, { timeout = 8000 } = {}) {
+  const ctrl = new AbortController()
+  const t = setTimeout(() => ctrl.abort(), timeout)
+  try {
+    const res = await fetch(url, { signal: ctrl.signal })
+    if (!res.ok) {
+      const err = new Error(`HTTP ${res.status}`)
+      err.status = res.status
+      throw err
+    }
+    return await res.text()
+  } finally {
+    clearTimeout(t)
+  }
+}
+
+// ---- Steam Community XML (免 key 回退) ----
+// steamcommunity.com/profiles/<id>?xml=1 与 /id/<vanity>?xml=1 都返回一份
+// 公开资料 XML, 无需 API key。能拿到: 头像 / 昵称 / vanity 解析 / 公开状态。
+// 拿不到: 游戏时长 (该端点已被 Steam 要求登录, 故不在此获取)。
+//
+// 极小正则解析器: 只取我们要的几个字段, 不引 XML 库。字段值多为
+// <![CDATA[...]]> 包裹, 统一剥掉。
+function _xmlField(xml, tag) {
+  const m = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, 'i'))
+  if (!m) return ''
+  let v = m[1].trim()
+  const cdata = v.match(/^<!\[CDATA\[([\s\S]*?)\]\]>$/)
+  if (cdata) v = cdata[1]
+  return v.trim()
+}
+
+// 拉取并解析 Community XML。by='profiles' 用 SteamID64, by='id' 用 vanity。
+async function fetchCommunityXML(idOrVanity, by = 'profiles') {
+  const seg = by === 'id' ? 'id' : 'profiles'
+  const xml = await getText(
+    `https://steamcommunity.com/${seg}/${encodeURIComponent(idOrVanity)}?xml=1`,
+  )
+  // 私密 / 不存在的资料没有 steamID64 字段
+  const steamId64 = _xmlField(xml, 'steamID64')
+  if (!steamId64) return null
+  return {
+    steamId64,
+    name: _xmlField(xml, 'steamID'),
+    avatar: _xmlField(xml, 'avatarFull') || _xmlField(xml, 'avatarMedium') || _xmlField(xml, 'avatarIcon'),
+    customURL: _xmlField(xml, 'customURL'),
+    // visibilityState: 3 = 公开
+    public: _xmlField(xml, 'visibilityState') === '3',
+  }
+}
+
 // ---- 输入解析: 各种格式统一成 SteamID64 ----
 // 支持: 纯 SteamID64 / profiles 链接 / id vanity 链接 / STEAM_0:X:Y / 裸 vanity 名
 export async function resolveSteamId(input) {
@@ -67,15 +119,24 @@ export async function resolveSteamId(input) {
   const idMatch = raw.match(/\/id\/([^/?#]+)/)
   if (idMatch) vanity = idMatch[1]
 
-  if (!STEAM_API_KEY) {
-    throw new Error('无法解析自定义 URL: 服务端未配置 STEAM_API_KEY')
+  // 有 key: 走官方 ResolveVanityURL
+  if (STEAM_API_KEY) {
+    const url = `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${STEAM_API_KEY}&vanityurl=${encodeURIComponent(vanity)}`
+    const data = await getJSON(url)
+    if (data?.response?.success === 1 && data.response.steamid) {
+      return data.response.steamid
+    }
+    throw new Error('无法解析该 Steam 链接 / 昵称')
   }
-  const url = `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${STEAM_API_KEY}&vanityurl=${encodeURIComponent(vanity)}`
-  const data = await getJSON(url)
-  if (data?.response?.success === 1 && data.response.steamid) {
-    return data.response.steamid
+
+  // 无 key: 回退到 Community XML (/id/<vanity>?xml=1 也返回 steamID64)
+  try {
+    const info = await fetchCommunityXML(vanity, 'id')
+    if (info?.steamId64) return info.steamId64
+  } catch {
+    /* 落到下面统一报错 */
   }
-  throw new Error('无法解析该 Steam 链接 / 昵称')
+  throw new Error('无法解析该 Steam 链接 / 昵称 (资料可能非公开)')
 }
 
 // 64 位 → 32 位 account id (OpenDota 用)
@@ -85,7 +146,28 @@ function toAccountId(steamId64) {
 
 // ---- Steam 官方: 头像 / 昵称 / 游戏时长 ----
 async function fetchSteamProfile(steamId64) {
-  if (!STEAM_API_KEY) return { data: null, error: '未配置 STEAM_API_KEY' }
+  // 无 key: 回退到 Community XML, 仍能拿到头像/昵称/公开状态 (游戏时长已被 Steam 墙, 拿不到)
+  if (!STEAM_API_KEY) {
+    try {
+      const info = await fetchCommunityXML(steamId64, 'profiles')
+      if (!info) return { data: null, error: '资料非公开或不存在' }
+      return {
+        data: {
+          name: info.name || '',
+          avatar: info.avatar || '',
+          profileUrl: info.customURL
+            ? `https://steamcommunity.com/id/${info.customURL}`
+            : `https://steamcommunity.com/profiles/${steamId64}`,
+          public: info.public,
+          dotaHours: null, // 免 key 拿不到时长
+          cs2Hours: null,
+        },
+        error: null,
+      }
+    } catch (e) {
+      return { data: null, error: e.message || '拉取失败' }
+    }
+  }
   try {
     const sumUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${steamId64}`
     const sum = await getJSON(sumUrl)
@@ -273,8 +355,9 @@ export async function fetchPlayerData(input) {
 // 供 server 判断配置状态 (前端可据此提示未配置的源)
 export function steamConfigStatus() {
   return {
-    steam: !!STEAM_API_KEY,
-    faceit: !!FACEIT_API_KEY,
-    opendota: true, // 免费, 始终可用
+    steam: !!STEAM_API_KEY, // 官方 key: 精确头像/昵称/游戏时长, 有则用官方源
+    faceit: !!FACEIT_API_KEY, // CS2 段位/ELO, 无好的免 key 源
+    opendota: true, // Dota2 段位/胜率/英雄, 免费恒可用
+    avatar: true, // 头像/昵称/vanity 解析: 免 key 也能经 Community XML 拿到
   }
 }
