@@ -279,24 +279,36 @@ function onMemberDragOver(e, i) {
 }
 
 .team-head {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 16px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--team-color) 14%, transparent),
+    color-mix(in srgb, var(--team-color) 16%, transparent),
     transparent
   );
+}
+/* 左侧整条队伍色脊: 身份标识, 与候选席铭牌竖脊呼应 */
+.team-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 4px;
+  background: var(--team-color);
 }
 
 .team-swatch {
   flex: 0 0 auto;
-  width: 10px;
-  height: 28px;
-  border-radius: 4px;
+  width: 8px;
+  height: 26px;
+  border-radius: 3px;
   background: var(--team-color);
+  box-shadow: 0 0 10px -2px var(--team-color);
 }
 
 .team-titles {
@@ -309,8 +321,10 @@ function onMemberDragOver(e, i) {
 
 .team-name {
   margin: 0;
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: 17px;
   font-weight: 700;
+  letter-spacing: 0.01em;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;

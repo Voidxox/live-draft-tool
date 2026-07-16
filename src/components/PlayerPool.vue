@@ -225,7 +225,7 @@ function confirmRemove(player) {
       tag="div"
       name="pool"
       class="pool-grid"
-      :style="{ '--cols': state.config.cardsPerRow }"
+      :style="{ '--card-min': `${Math.max(120, Math.round(760 / state.config.cardsPerRow))}px` }"
     >
       <div
         v-for="(p, i) in store.rosterPlayers.value"
@@ -440,16 +440,19 @@ function confirmRemove(player) {
 
 .pool-grid {
   display: grid;
-  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
-  gap: 10px;
+  /* 擂台肖像卡: 每卡最小宽度由「每排卡片」反推 (数字越大列越窄), 自适应换行 */
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min, 160px), 1fr));
+  gap: 12px;
 }
 .pool-item {
   position: relative;
 }
 .row-actions {
   position: absolute;
-  top: 6px;
+  /* 右下角: 避开肖像卡右上的段位浮标与左上的到场开关 */
+  bottom: 6px;
   right: 6px;
+  z-index: 4;
   display: flex;
   gap: 4px;
   opacity: 0;

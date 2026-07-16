@@ -349,21 +349,24 @@ onBeforeUnmount(() => {
       <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
     </div>
 
-    <!-- 当前轮次横幅 -->
-    <section v-if="isDrafting && store.currentTeam.value" class="turn-banner"
+    <!-- 当前轮次擂台 (hero): 大号队长名 + 计时 + 进度 -->
+    <section v-if="isDrafting && store.currentTeam.value" class="stage"
       :style="{ '--team-color': store.currentTeam.value.color }" aria-live="polite">
-      <div class="turn-left">
-        <span class="turn-eyebrow">当前轮到</span>
-        <div class="turn-team">
-          <span class="turn-swatch" aria-hidden="true"></span>
-          <span class="turn-name">{{ store.currentTeam.value.name }}</span>
-          <span v-if="store.currentTeam.value.captain" class="turn-captain">
-            · {{ store.currentTeam.value.captain }}
+      <span class="stage-rail" aria-hidden="true"></span>
+      <div class="stage-lead">
+        <span class="stage-eyebrow">On the clock · 轮到</span>
+        <div class="stage-team">
+          <span class="stage-name">{{ store.currentTeam.value.name }}</span>
+          <span v-if="store.currentTeam.value.captain" class="stage-captain">
+            队长 {{ store.currentTeam.value.captain }}
           </span>
         </div>
-        <span class="turn-progress tnum">进度 {{ progressText }}</span>
       </div>
-      <div class="turn-right">
+      <div class="stage-meta">
+        <div class="stage-count">
+          <span class="stage-count-num tnum">{{ progressText }}</span>
+          <span class="stage-count-label">已选 / 总手数</span>
+        </div>
         <PickTimer v-if="state.config.pickTimer > 0" :remaining="state.timerRemaining" :total="state.config.pickTimer"
           :running="state.timerRunning" />
         <button type="button" class="btn subtle sm" @click="store.undoLastPick()">
@@ -554,72 +557,95 @@ onBeforeUnmount(() => {
   transition: width 0.3s ease-out;
 }
 
-/* 当前轮次横幅 */
-.turn-banner {
+/* 当前轮次擂台 (hero) */
+.stage {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
   flex-wrap: wrap;
-  padding: 14px 18px;
+  padding: 18px 22px 18px 26px;
   margin-bottom: 18px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid var(--gold-border);
+  overflow: hidden;
   background:
+    radial-gradient(140% 120% at 0% 0%, color-mix(in srgb, var(--team-color, var(--gold)) 20%, transparent), transparent 60%),
     linear-gradient(180deg, var(--gold-soft), transparent),
     var(--surface-1);
-  box-shadow: 0 0 26px -10px var(--gold-glow);
+  box-shadow: 0 0 30px -10px var(--gold-glow);
+}
+/* 左侧队伍色脊: 身份标识 */
+.stage-rail {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--team-color, var(--gold)), color-mix(in srgb, var(--team-color, var(--gold)) 40%, transparent));
 }
 
-.turn-left {
+.stage-lead {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
-
-.turn-eyebrow {
-  font-size: 12px;
+.stage-eyebrow {
+  font-size: 11px;
   font-weight: 700;
   color: var(--gold);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.12em;
 }
-
-.turn-team {
+.stage-team {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-
-.turn-swatch {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--team-color, var(--accent));
-}
-
-.turn-name {
-  font-size: 18px;
-  font-weight: 800;
+.stage-name {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
   color: var(--text);
 }
-
-.turn-captain {
+.stage-captain {
   font-size: 14px;
   color: var(--text-muted);
 }
 
-.turn-progress {
-  font-size: 13px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.turn-right {
+.stage-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 18px;
+}
+.stage-count {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.1;
+}
+.stage-count-num {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+.stage-count-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+@media (max-width: 560px) {
+  .stage-name { font-size: 26px; }
+  .stage-meta { gap: 12px; }
 }
 
 /* 完成横幅 */
