@@ -1,6 +1,7 @@
 import { reactive, computed, watch } from 'vue'
 import { generatePickOrder } from '../composables/useDraftEngine.js'
 import { LocalAdapter, RemoteAdapter } from './syncAdapter.js'
+import { lookupSteam } from './steamClient.js'
 
 // ---- 唯一 ID ----
 let _seq = 1
@@ -65,6 +66,19 @@ let _applyingRemote = false // 回声防护: 正在应用远端快照时, 不再
 let _stopWatch = null // 停止 watch 的句柄
 let _pushHandle = null // 推送 debounce 句柄
 
+// ---- Steam 数据加载状态 ----
+// 正在拉取数据的 playerId 集合 (响应式, 供 UI 显示"加载中"转圈)。
+// 只在管理员本地有意义, 不纳入快照 —— 观众只看结果。
+const steamLoading = reactive({ ids: [] })
+function _setSteamLoading(id, on) {
+  const i = steamLoading.ids.indexOf(id)
+  if (on && i < 0) steamLoading.ids.push(id)
+  if (!on && i >= 0) steamLoading.ids.splice(i, 1)
+}
+function isSteamLoading(id) {
+  return steamLoading.ids.includes(id)
+}
+
 // ---- 计算属性 ----
 const assignedPlayerIds = computed(() => {
   const s = new Set()
@@ -72,9 +86,18 @@ const assignedPlayerIds = computed(() => {
   return s
 })
 
-const availablePlayers = computed(() =>
+// 花名册: 未分配的全部玩家 (含未到场), 供候选席显示
+const rosterPlayers = computed(() =>
   state.pool.filter((p) => !assignedPlayerIds.value.has(p.id)),
 )
+
+// 可选玩家: 到场 且 未分配 —— 只有这些进入选马流程 / 随机分组
+const availablePlayers = computed(() =>
+  state.pool.filter((p) => p.present !== false && !assignedPlayerIds.value.has(p.id)),
+)
+
+// 到场人数 (整份花名册中标记到场的, 无论是否已分配)
+const presentCount = computed(() => state.pool.filter((p) => p.present !== false).length)
 
 const currentTeamId = computed(() => state.pickOrder[state.currentStep] ?? null)
 const currentTeam = computed(
@@ -110,7 +133,8 @@ function updateTeam(id, patch) {
 function addPlayer(name, note = '') {
   const clean = String(name || '').trim()
   if (!clean) return null
-  const player = { id: uid('p'), name: clean, note: String(note || '').trim(), tags: [] }
+  // present: 是否到场。导入即默认到场, 只有到场的人进入选马流程。
+  const player = { id: uid('p'), name: clean, note: String(note || '').trim(), tags: [], present: true }
   state.pool.push(player)
   return player
 }
@@ -133,6 +157,19 @@ function updatePlayer(id, patch) {
   if (p) Object.assign(p, patch)
 }
 
+// 切换单个玩家的到场状态 (选人中不允许改, 避免影响进行中的轮次)
+function togglePresence(id) {
+  if (state.phase !== 'setup') return
+  const p = state.pool.find((x) => x.id === id)
+  if (p) p.present = !p.present
+}
+
+// 批量设置全体到场状态 (全部到场 / 全部未到)
+function setAllPresence(present) {
+  if (state.phase !== 'setup') return
+  state.pool.forEach((p) => (p.present = !!present))
+}
+
 function removePlayer(id) {
   const i = state.pool.findIndex((x) => x.id === id)
   if (i >= 0) state.pool.splice(i, 1)
@@ -140,6 +177,63 @@ function removePlayer(id) {
     const mi = t.members.indexOf(id)
     if (mi >= 0) t.members.splice(mi, 1)
   })
+}
+
+// ---- Steam / V 社游戏数据 ----
+// 绑定时拉一次 + 手动刷新。数据挂到 player.steam 上, 随 pool 进 snapshot,
+// 天然被 localStorage 持久化与 WebSocket 同步覆盖, 观众端零 API 调用即可看到。
+// steamLoading 记录正在查询的 playerId, 供 UI 显示 loading / 禁用重复点击。
+
+// 给玩家绑定 Steam 输入 (链接 / ID / vanity) 并立即拉取一次数据。
+// 成功后把精简 payload 挂到 player.steam, 并记住 player.steamInput 供后续刷新。
+async function bindSteam(playerId, input) {
+  const p = playerById(playerId)
+  if (!p) return { ok: false, msg: '玩家不存在' }
+  const raw = String(input || '').trim()
+  if (!raw) return { ok: false, msg: '请输入 Steam 链接 / ID' }
+  if (steamLoading.ids.includes(playerId)) return { ok: false, msg: '正在查询中' }
+
+  steamLoading.ids.push(playerId)
+  try {
+    const data = await lookupSteam(raw)
+    p.steamInput = raw
+    p.steam = data
+    return { ok: true, data }
+  } catch (e) {
+    return { ok: false, msg: e.message || '查询失败' }
+  } finally {
+    const i = steamLoading.ids.indexOf(playerId)
+    if (i >= 0) steamLoading.ids.splice(i, 1)
+  }
+}
+
+// 用已保存的 steamInput 重新拉取一次 (手动刷新单个玩家)。
+async function refreshSteam(playerId) {
+  const p = playerById(playerId)
+  if (!p) return { ok: false, msg: '玩家不存在' }
+  if (!p.steamInput) return { ok: false, msg: '该玩家尚未绑定 Steam' }
+  return bindSteam(playerId, p.steamInput)
+}
+
+// 解绑: 清掉该玩家的 Steam 数据与输入。
+function unbindSteam(playerId) {
+  const p = playerById(playerId)
+  if (!p) return
+  delete p.steam
+  delete p.steamInput
+}
+
+// 一键刷新所有已绑定玩家 (直播前整体更新一次)。串行执行避免打爆第三方 API。
+async function refreshAllSteam() {
+  const bound = state.pool.filter((p) => p.steamInput)
+  let ok = 0
+  let fail = 0
+  for (const p of bound) {
+    const r = await refreshSteam(p.id)
+    if (r.ok) ok += 1
+    else fail += 1
+  }
+  return { ok, fail, total: bound.length }
 }
 
 // ---- 管理员拖动分配 ----
@@ -199,6 +293,8 @@ function _touchDrag(entry) {
 // ---- 选人流程 ----
 function startDraft() {
   if (state.pool.length === 0) return { ok: false, msg: '候选池为空,先添加玩家' }
+  if (availablePlayers.value.length === 0)
+    return { ok: false, msg: '没有到场玩家,先在候选席勾选到场' }
   // 清空既有分配
   state.teams.forEach((t) => (t.members = []))
   state.pickOrder = generatePickOrder(
@@ -346,7 +442,10 @@ function restore(data) {
   if (!data || typeof data !== 'object') return false
   if (data.config) Object.assign(state.config, data.config)
   if (Array.isArray(data.teams)) state.teams = data.teams
-  if (Array.isArray(data.pool)) state.pool = data.pool
+  if (Array.isArray(data.pool)) {
+    // 向后兼容: 老存档没有 present 字段, 回填为"到场"
+    state.pool = data.pool.map((p) => (p && p.present === undefined ? { ...p, present: true } : p))
+  }
   if (data.phase) state.phase = data.phase
   if (Array.isArray(data.pickOrder)) state.pickOrder = data.pickOrder
   if (typeof data.currentStep === 'number') state.currentStep = data.currentStep
@@ -484,6 +583,8 @@ export function useDraftStore() {
     state,
     // computed
     availablePlayers,
+    rosterPlayers,
+    presentCount,
     currentTeamId,
     currentTeam,
     totalPicks,
@@ -497,6 +598,8 @@ export function useDraftStore() {
     addPlayersBulk,
     updatePlayer,
     removePlayer,
+    togglePresence,
+    setAllPresence,
     // 管理员拖动分配
     teamOfPlayer,
     assignPlayer,
@@ -527,5 +630,12 @@ export function useDraftStore() {
     net,
     connectRealtime,
     disconnectRealtime,
+    // Steam / V 社游戏数据
+    steamLoading,
+    isSteamLoading,
+    bindSteam,
+    refreshSteam,
+    unbindSteam,
+    refreshAllSteam,
   }
 }
