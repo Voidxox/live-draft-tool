@@ -5,6 +5,7 @@ import SetupPanel from './components/SetupPanel.vue'
 import PlayerPool from './components/PlayerPool.vue'
 import TeamBoard from './components/TeamBoard.vue'
 import PickTimer from './components/PickTimer.vue'
+import NumberTicker from './components/NumberTicker.vue'
 
 const store = useDraftStore()
 const state = store.state
@@ -119,6 +120,11 @@ const progressPct = computed(() => {
   const total = store.totalPicks.value
   if (total === 0) return 0
   return Math.min(100, (state.currentStep / total) * 100)
+})
+// 已选手数 (供舞台滚动数字用)
+const progressDone = computed(() => {
+  const total = store.totalPicks.value
+  return total === 0 ? 0 : Math.min(state.currentStep, total)
 })
 
 // ---- 工具栏动作 ----
@@ -364,7 +370,9 @@ onBeforeUnmount(() => {
       </div>
       <div class="stage-meta">
         <div class="stage-count">
-          <span class="stage-count-num tnum">{{ progressText }}</span>
+          <span class="stage-count-num tnum">
+            <NumberTicker :value="progressDone" /> / {{ store.totalPicks.value }}
+          </span>
           <span class="stage-count-label">已选 / 总手数</span>
         </div>
         <PickTimer v-if="state.config.pickTimer > 0" :remaining="state.timerRemaining" :total="state.config.pickTimer"
