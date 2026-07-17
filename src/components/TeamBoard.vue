@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import PlayerCard from './PlayerCard.vue'
+import BorderBeam from './BorderBeam.vue'
 import { dragState, setDropTarget, clearDropTarget, endDrag } from '../composables/useDragDrop.js'
 
 const props = defineProps({
@@ -241,7 +242,7 @@ function onMemberDragOver(e, i) {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--surface-1);
   overflow: hidden;
   transition:
@@ -252,31 +253,9 @@ function onMemberDragOver(e, i) {
 
 .team-board.active {
   border-color: var(--gold);
-  box-shadow:
-    0 0 0 1px var(--gold),
-    0 0 28px -6px var(--gold-glow);
-  animation: team-breathe 2.4s ease-in-out infinite;
+  box-shadow: 0 0 0 1px var(--gold);
 }
 
-@keyframes team-breathe {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px var(--gold),
-      0 0 22px -8px var(--gold-glow);
-  }
-  50% {
-    box-shadow:
-      0 0 0 1px var(--gold),
-      0 0 34px -2px var(--gold-glow);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .team-board.active {
-    animation: none;
-  }
-}
 
 .team-head {
   position: relative;
@@ -285,11 +264,7 @@ function onMemberDragOver(e, i) {
   gap: 10px;
   padding: 12px 14px 12px 16px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--team-color) 16%, transparent),
-    transparent
-  );
+  background: color-mix(in srgb, var(--team-color) 12%, var(--surface-1));
 }
 /* 左侧整条队伍色脊: 身份标识, 与候选席铭牌竖脊呼应 */
 .team-head::before {
@@ -306,9 +281,8 @@ function onMemberDragOver(e, i) {
   flex: 0 0 auto;
   width: 8px;
   height: 26px;
-  border-radius: 3px;
+  border-radius: 2px;
   background: var(--team-color);
-  box-shadow: 0 0 10px -2px var(--team-color);
 }
 
 .team-titles {
@@ -469,11 +443,7 @@ function onMemberDragOver(e, i) {
     0 0 24px -8px var(--accent-ring);
 }
 .team-board.drop-target .team-head {
-  background: linear-gradient(
-    180deg,
-    var(--accent-soft),
-    transparent
-  );
+  background: var(--accent-soft);
 }
 
 .member-empty.drop-hint {
@@ -680,14 +650,15 @@ function onMemberDragOver(e, i) {
 }
 .power-track {
   height: 5px;
-  border-radius: 999px;
+  border-radius: 2px;
   background: var(--surface-3);
   overflow: hidden;
 }
 .power-fill {
   height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--team-color), var(--gold));
+  border-radius: 2px;
+  /* HUD: 纯队伍色实心, 不渐变到金 */
+  background: var(--team-color);
   transition: width 0.3s ease-out;
 }
 

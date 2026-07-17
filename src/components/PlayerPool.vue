@@ -375,8 +375,8 @@ function confirmRemove(player) {
 }
 .pool.drop-active {
   border-color: var(--accent);
-  background: linear-gradient(0deg, var(--accent-soft), var(--surface-1));
-  box-shadow: 0 0 0 1px var(--accent), 0 0 24px -8px var(--accent-ring);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 .card-head {

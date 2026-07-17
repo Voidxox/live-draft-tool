@@ -553,7 +553,7 @@ onBeforeUnmount(() => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--gold));
+  background: var(--gold);
   transition: width 0.3s ease-out;
 }
 
@@ -565,25 +565,23 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 20px;
   flex-wrap: wrap;
-  padding: 18px 22px 18px 26px;
+  padding: 16px 22px 16px 26px;
   margin-bottom: 18px;
-  border-radius: 16px;
   border: 1px solid var(--gold-border);
+  border-left: none;
   overflow: hidden;
-  background:
-    radial-gradient(140% 120% at 0% 0%, color-mix(in srgb, var(--team-color, var(--gold)) 20%, transparent), transparent 60%),
-    linear-gradient(180deg, var(--gold-soft), transparent),
-    var(--surface-1);
-  box-shadow: 0 0 30px -10px var(--gold-glow);
+  background: var(--surface-1);
+  /* HUD: 右上斜切一角, 转播图形棱角 */
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
 }
-/* 左侧队伍色脊: 身份标识 */
+/* 左侧队伍色脊: 纯实色块身份标识, 不发光不渐变 */
 .stage-rail {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 0;
-  width: 6px;
-  background: linear-gradient(180deg, var(--team-color, var(--gold)), color-mix(in srgb, var(--team-color, var(--gold)) 40%, transparent));
+  width: 5px;
+  background: var(--team-color, var(--gold));
 }
 
 .stage-lead {
@@ -656,10 +654,11 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   padding: 12px 18px;
   margin-bottom: 18px;
-  border-radius: 14px;
   border: 1px solid color-mix(in srgb, var(--success) 40%, transparent);
   background: color-mix(in srgb, var(--success) 12%, var(--surface-1));
   font-weight: 600;
+  /* HUD: 右上斜切一角, 呼应舞台 */
+  clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
 }
 
 .done-icon {

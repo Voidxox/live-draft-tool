@@ -275,7 +275,7 @@ function onDragEnd() {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--surface-2);
   overflow: hidden;
   user-select: none;
@@ -318,9 +318,10 @@ function onDragEnd() {
   display: grid;
   place-items: center;
   overflow: hidden;
+  /* HUD: 纯色底 + 极淡斜向网格纹, 无彩色辉光 */
   background:
-    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--surface-3), var(--surface-1));
+    repeating-linear-gradient(-45deg, transparent 0 9px, rgba(255,255,255,0.02) 9px 10px),
+    var(--surface-3);
 }
 .portrait-img {
   position: absolute;
@@ -341,8 +342,7 @@ function onDragEnd() {
   font-size: 64px;
   font-weight: 700;
   line-height: 1;
-  color: color-mix(in srgb, var(--accent) 72%, var(--text));
-  text-shadow: 0 2px 18px color-mix(in srgb, var(--accent) 40%, transparent);
+  color: color-mix(in srgb, var(--accent) 55%, var(--text-faint));
 }
 .portrait-spin {
   width: 30px;
@@ -448,7 +448,7 @@ function onDragEnd() {
   justify-content: center;
   gap: 5px;
   padding: 6px;
-  background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--accent) 92%, transparent));
+  background: var(--accent);
   color: #fff;
   font-size: 12px;
   font-weight: 700;
@@ -472,16 +472,15 @@ function onDragEnd() {
   clip-path: polygon(0 7px, 100% 0, 100% 100%, 0 100%);
   margin-top: -1px;
 }
-/* 左侧一道强调竖脊 */
+/* 左侧一道强调竖脊: 纯实色, 不渐变 */
 .fighter-plate::before {
   content: '';
   position: absolute;
-  top: 9px;
-  bottom: 9px;
+  top: 0;
+  bottom: 0;
   left: 0;
   width: 3px;
-  border-radius: 0 2px 2px 0;
-  background: linear-gradient(180deg, var(--accent), var(--gold));
+  background: var(--accent);
 }
 .fighter-name {
   display: block;
@@ -527,7 +526,7 @@ function onDragEnd() {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   background: var(--surface-2);
   transition:
     transform 0.16s ease-out,
