@@ -242,13 +242,8 @@ onBeforeUnmount(() => {
       <div class="toolbar" role="toolbar" aria-label="工具栏">
         <!-- 数据下拉菜单 -->
         <div class="data-menu">
-          <button
-            type="button"
-            class="btn ghost sm"
-            aria-haspopup="menu"
-            :aria-expanded="dataMenuOpen"
-            @click.stop="toggleDataMenu"
-          >
+          <button type="button" class="btn ghost sm" aria-haspopup="menu" :aria-expanded="dataMenuOpen"
+            @click.stop="toggleDataMenu">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <ellipse cx="12" cy="5" rx="9" ry="3" />
@@ -263,29 +258,55 @@ onBeforeUnmount(() => {
           </button>
           <div v-if="dataMenuOpen" class="data-pop card" role="menu">
             <button type="button" class="data-item" role="menuitem" @click="onSave">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+                <path d="M17 21v-8H7v8M7 3v5h8" />
+              </svg>
               保存到本地
             </button>
             <button type="button" class="data-item" role="menuitem" @click="onLoad">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><path d="M12 3v13M7 11l5 5 5-5"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7" />
+                <path d="M12 3v13M7 11l5 5 5-5" />
+              </svg>
               读取本地
             </button>
             <div class="data-sep" role="separator"></div>
             <button type="button" class="data-item" role="menuitem" @click="onExport">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v13M7 8l5-5 5 5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3v13M7 8l5-5 5 5" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7" />
+              </svg>
               导出 JSON 文件
             </button>
             <button type="button" class="data-item" role="menuitem" @click="triggerImport">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V3M7 11l5 5 5-5"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 16V3M7 11l5 5 5-5" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7" />
+              </svg>
               从文件导入
             </button>
             <div class="data-sep" role="separator"></div>
             <button type="button" class="data-item" role="menuitem" @click="onBackup">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 7v5l3 2"/><path d="M21 3v6h-6"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 3a9 9 0 1 0 9 9" />
+                <path d="M12 7v5l3 2" />
+                <path d="M21 3v6h-6" />
+              </svg>
               创建备份
             </button>
             <button type="button" class="data-item" role="menuitem" @click="onRestoreBackup">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 3v6h6"/><path d="M12 7v5l3 2"/></svg>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 9-9" />
+                <path d="M3 3v6h6" />
+                <path d="M12 7v5l3 2" />
+              </svg>
               恢复最新备份
             </button>
           </div>
@@ -295,12 +316,7 @@ onBeforeUnmount(() => {
 
         <!-- 实时同步入口 -->
         <div class="sync-box">
-          <button
-            v-if="!net.enabled"
-            type="button"
-            class="btn subtle sm"
-            @click="syncOpen = !syncOpen"
-          >
+          <button v-if="!net.enabled" type="button" class="btn subtle sm" @click="syncOpen = !syncOpen">
             实时同步
           </button>
           <template v-else>
@@ -309,12 +325,7 @@ onBeforeUnmount(() => {
               {{ net.role === 'admin' ? '管理员' : '观众' }} · {{ net.room }}
               <span class="sync-clients tnum" :title="`在线 ${net.clients} 人`">{{ net.clients }}人</span>
             </span>
-            <button
-              v-if="net.role === 'admin'"
-              type="button"
-              class="btn ghost sm"
-              @click="copyShare"
-            >
+            <button v-if="net.role === 'admin'" type="button" class="btn ghost sm" @click="copyShare">
               复制观众链接
             </button>
             <button type="button" class="btn ghost sm" @click="leaveSync">断开</button>
@@ -328,13 +339,7 @@ onBeforeUnmount(() => {
             </p>
             <label class="field">
               <span class="field-label">房间号(留空自动生成)</span>
-              <input
-                v-model="roomInput"
-                class="sync-input"
-                type="text"
-                placeholder="例如 A123"
-                maxlength="16"
-              />
+              <input v-model="roomInput" class="sync-input" type="text" placeholder="例如 A123" maxlength="16" />
             </label>
             <div class="sync-actions">
               <button type="button" class="btn primary sm" @click="connectAs('admin')">
@@ -395,69 +400,15 @@ onBeforeUnmount(() => {
       <button type="button" class="btn ghost sm" @click="store.resetDraft()">重新开始</button>
     </section>
 
-    <!-- 现场说明 (纳入同步; 管理员可编辑, 观众只读) -->
-    <section
-      v-if="canEditNotice || noticeText"
-      class="notice-panel"
-      :class="{ open: noticeOpen }"
-    >
-      <button
-        type="button"
-        class="notice-head"
-        :aria-expanded="noticeOpen"
-        @click="noticeOpen = !noticeOpen"
-      >
-        <span class="notice-title">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 16v-4M12 8h.01" />
-          </svg>
-          现场说明
-        </span>
-        <span class="notice-preview" v-if="!noticeOpen && noticeText">{{ noticeText }}</span>
-        <svg class="notice-caret" :class="{ open: noticeOpen }" width="14" height="14" viewBox="0 0 24 24"
-          fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-          aria-hidden="true">
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
-      <div v-if="noticeOpen" class="notice-body">
-        <textarea
-          v-if="canEditNotice"
-          v-model="noticeText"
-          class="notice-input"
-          rows="3"
-          maxlength="500"
-          placeholder="给观众的规则说明 / 赛制 / 注意事项，会实时同步给所有人。"
-          aria-label="现场说明"
-        ></textarea>
-        <p v-else-if="noticeText" class="notice-text">{{ noticeText }}</p>
-        <p v-else class="notice-empty">暂无说明。</p>
-      </div>
-    </section>
-
     <!-- 移动端标签切换 -->
     <div v-if="isMobile" class="mobile-tabs" role="tablist" aria-label="视图切换">
-      <button
-        type="button"
-        role="tab"
-        class="mobile-tab"
-        :class="{ active: mobileTab === 'pool' }"
-        :aria-selected="mobileTab === 'pool'"
-        @click="mobileTab = 'pool'"
-      >
+      <button type="button" role="tab" class="mobile-tab" :class="{ active: mobileTab === 'pool' }"
+        :aria-selected="mobileTab === 'pool'" @click="mobileTab = 'pool'">
         候选席
         <span class="mobile-tab-count tnum">{{ store.availablePlayers.value.length }}</span>
       </button>
-      <button
-        type="button"
-        role="tab"
-        class="mobile-tab"
-        :class="{ active: mobileTab === 'teams' }"
-        :aria-selected="mobileTab === 'teams'"
-        @click="mobileTab = 'teams'"
-      >
+      <button type="button" role="tab" class="mobile-tab" :class="{ active: mobileTab === 'teams' }"
+        :aria-selected="mobileTab === 'teams'" @click="mobileTab = 'teams'">
         战队面板
         <span class="mobile-tab-count tnum">{{ state.teams.length }}</span>
       </button>
@@ -478,15 +429,15 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="teams-scroll">
-        <div class="teams-grid" :class="{ dense: teamCompact }" :style="{ '--team-min': teamMinWidth }">
-          <TeamBoard v-for="(t, i) in state.teams" :key="t.id" :team="t" :members="membersOf(t)" :index="i"
-            :is-active="isDrafting && store.currentTeamId.value === t.id" :editable="teamsEditable"
-            :compact="teamCompact" :all-teams="state.teams" @update="(patch) => store.updateTeam(t.id, patch)"
-            @remove-member="(pid) => store.unassignPlayer(pid)"
-            @assign="(payload) => store.assignPlayer(payload.playerId, payload.toTeamId, payload.index)"
-            @move-member="(payload) => store.assignPlayer(payload.playerId, payload.toTeamId)"
-            @unassign-member="(pid) => store.unassignPlayer(pid)" />
-        </div>
+          <div class="teams-grid" :class="{ dense: teamCompact }" :style="{ '--team-min': teamMinWidth }">
+            <TeamBoard v-for="(t, i) in state.teams" :key="t.id" :team="t" :members="membersOf(t)" :index="i"
+              :is-active="isDrafting && store.currentTeamId.value === t.id" :editable="teamsEditable"
+              :compact="teamCompact" :all-teams="state.teams" @update="(patch) => store.updateTeam(t.id, patch)"
+              @remove-member="(pid) => store.unassignPlayer(pid)"
+              @assign="(payload) => store.assignPlayer(payload.playerId, payload.toTeamId, payload.index)"
+              @move-member="(payload) => store.assignPlayer(payload.playerId, payload.toTeamId)"
+              @unassign-member="(pid) => store.unassignPlayer(pid)" />
+          </div>
         </div>
       </div>
     </div>
@@ -582,6 +533,7 @@ onBeforeUnmount(() => {
   /* HUD: 右上斜切一角, 转播图形棱角 */
   clip-path: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, 0 100%);
 }
+
 /* 左侧队伍色脊: 纯实色块身份标识, 不发光不渐变 */
 .stage-rail {
   position: absolute;
@@ -598,6 +550,7 @@ onBeforeUnmount(() => {
   gap: 4px;
   min-width: 0;
 }
+
 .stage-eyebrow {
   font-size: 11px;
   font-weight: 700;
@@ -605,12 +558,14 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
+
 .stage-team {
   display: flex;
   align-items: baseline;
   gap: 12px;
   flex-wrap: wrap;
 }
+
 .stage-name {
   font-family: var(--font-display);
   font-size: 32px;
@@ -619,6 +574,7 @@ onBeforeUnmount(() => {
   letter-spacing: 0.01em;
   color: var(--text);
 }
+
 .stage-captain {
   font-size: 14px;
   color: var(--text-muted);
@@ -629,18 +585,21 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 18px;
 }
+
 .stage-count {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   line-height: 1.1;
 }
+
 .stage-count-num {
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
   color: var(--text);
 }
+
 .stage-count-label {
   font-size: 10px;
   font-weight: 600;
@@ -650,8 +609,13 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 560px) {
-  .stage-name { font-size: 26px; }
-  .stage-meta { gap: 12px; }
+  .stage-name {
+    font-size: 26px;
+  }
+
+  .stage-meta {
+    gap: 12px;
+  }
 }
 
 /* 完成横幅 */
@@ -785,6 +749,7 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   background: var(--surface-1);
 }
+
 .mobile-tab {
   flex: 1 1 auto;
   display: inline-flex;
@@ -801,10 +766,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background 0.16s ease-out, color 0.16s ease-out;
 }
+
 .mobile-tab.active {
   background: var(--accent-soft);
   color: var(--accent);
 }
+
 .mobile-tab .tab-badge {
   min-width: 20px;
   height: 18px;
@@ -828,11 +795,13 @@ onBeforeUnmount(() => {
   .mobile-tabs {
     display: flex;
   }
+
   /* 标签模式下, 未选中的列隐藏 */
   .layout.mobile .col-left.mobile-hidden,
   .layout.mobile .col-right.mobile-hidden {
     display: none;
   }
+
   /* 移动端取消战队区独立滚动, 跟随页面滚动 */
   .teams-scroll {
     max-height: none;
@@ -869,6 +838,7 @@ onBeforeUnmount(() => {
   font-size: 13px;
   font-weight: 600;
 }
+
 .sync-status .dot {
   width: 8px;
   height: 8px;
@@ -876,14 +846,17 @@ onBeforeUnmount(() => {
   background: var(--text-faint);
   transition: background 0.2s ease-out;
 }
+
 .sync-status.online {
   color: var(--text);
   border-color: color-mix(in srgb, var(--success) 45%, var(--border));
 }
+
 .sync-status.online .dot {
   background: var(--success);
   box-shadow: 0 0 8px -1px var(--success);
 }
+
 .sync-clients {
   color: var(--text-muted);
   font-size: 12px;
@@ -903,29 +876,38 @@ onBeforeUnmount(() => {
   padding: 18px;
   animation: sync-pop-in 0.18s ease-out;
 }
+
 @keyframes sync-pop-in {
-  from { opacity: 0; transform: translateY(-6px) scale(0.98); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
 }
+
 .sync-pop h3 {
   margin: 0;
   font-size: 15px;
 }
+
 .sync-tip {
   margin: 0;
   font-size: 13px;
   line-height: 1.6;
   color: var(--text-muted);
 }
+
 .sync-pop .field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
+
 .sync-pop .field-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
 }
+
 .sync-input {
   height: 40px;
   padding: 0 12px;
@@ -935,16 +917,19 @@ onBeforeUnmount(() => {
   color: var(--text);
   font-size: 14px;
 }
+
 .sync-input:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
+
 .sync-actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
+
 .sync-close {
   position: absolute;
   top: 10px;
@@ -958,6 +943,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
   font-size: 13px;
 }
+
 .sync-close:hover {
   background: var(--surface-3);
   color: var(--text);
@@ -967,10 +953,12 @@ onBeforeUnmount(() => {
 .layout.readonly {
   position: relative;
 }
+
 .layout.readonly :is(button, input, textarea, .player-card, .segment, .ghost-btn),
 .layout.readonly [draggable='true'] {
   pointer-events: none !important;
 }
+
 .layout.readonly [draggable='true'] {
   -webkit-user-drag: none;
 }
@@ -999,6 +987,7 @@ onBeforeUnmount(() => {
   background: var(--surface-1);
   overflow: hidden;
 }
+
 .notice-head {
   display: flex;
   align-items: center;
@@ -1011,10 +1000,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   text-align: left;
 }
+
 .notice-head:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px var(--accent-ring);
 }
+
 .notice-title {
   flex: 0 0 auto;
   display: inline-flex;
@@ -1024,6 +1015,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: var(--accent);
 }
+
 .notice-preview {
   flex: 1 1 auto;
   min-width: 0;
@@ -1033,18 +1025,22 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .notice-caret {
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--text-muted);
   transition: transform 0.2s ease-out;
 }
+
 .notice-caret.open {
   transform: rotate(180deg);
 }
+
 .notice-body {
   padding: 0 14px 14px;
 }
+
 .notice-input {
   width: 100%;
   padding: 10px 12px;
@@ -1057,11 +1053,13 @@ onBeforeUnmount(() => {
   line-height: 1.6;
   resize: vertical;
 }
+
 .notice-input:focus-visible {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
+
 .notice-text {
   margin: 0;
   font-size: 14px;
@@ -1069,6 +1067,7 @@ onBeforeUnmount(() => {
   color: var(--text);
   white-space: pre-wrap;
 }
+
 .notice-empty {
   margin: 0;
   font-size: 13px;
@@ -1079,6 +1078,7 @@ onBeforeUnmount(() => {
   .sync-pop {
     animation: none;
   }
+
   .notice-caret {
     transition: none;
   }

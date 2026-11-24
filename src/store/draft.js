@@ -223,7 +223,7 @@ function unbindSteam(playerId) {
   delete p.steamInput
 }
 
-// 一键刷新所有已绑定玩家 (直播前整体更新一次)。串行执行避免打爆第三方 API。
+// 一键刷新所有已绑定玩家 (前整体更新一次)。串行执行避免打爆第三方 API。
 async function refreshAllSteam() {
   const bound = state.pool.filter((p) => p.steamInput)
   let ok = 0
@@ -389,7 +389,7 @@ function randomAssignAll() {
   // Fisher–Yates
   for (let i = players.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[players[i], players[j]] = [players[j], players[i]]
+      ;[players[i], players[j]] = [players[j], players[i]]
   }
   players.forEach((p, i) => {
     state.teams[i % state.teams.length].members.push(p.id)
